@@ -1,0 +1,15 @@
+name: 'Lerna Version and Publish'
+description: 'Update package versions with lerna and create a pull request. Publish packages when the PR is merged.'
+inputs:
+  github-token:
+    description: 'GitHub token'
+    required: true
+  version-command:
+    description: 'Command to update package versions'
+    required: true
+  publish-command:
+    description: 'Command to publish packages'
+    required: true
+runs:
+  using: 'node16'
+  main: 'index.js'
