@@ -4,12 +4,42 @@ const git = require('simple-git');
 const core = require('@actions/core');
 const github = require('@actions/github');
 
+async function checkoutBranch(gitClient, branchName) {
+	await gitClient.checkoutLocalBranch(branchName);
+}
+
+async function runCommand(command) {
+	const cmd = command.split(' ');
+	await exec.exec(cmd[0], cmd.slice(1));
+}
+
+async function commitChanges(gitClient, commitMsg, branchName) {
+	await gitClient.add('./*');
+	await gitClient.commit(commitMsg);
+	await gitClient.push('origin', branchName);
+}
+
+async function createPullRequest(octokit, context, commitTitle, branchName) {
+	await octokit.pulls.create({
+		owner: context.repo.owner,
+		repo: context.repo.repo,
+		title: commitTitle,
+		head: branchName,
+		base: 'main'
+	});
+}
+
 async function run() {
 	try {
 		// Get inputs
 		const githubToken = core.getInput('github-token');
 		const versionCommand = core.getInput('version-command');
 		const publishCommand = core.getInput('publish-command');
+		const commitMsg = core.getInput('commit-msg');
+		const commitTitle = core.getInput('commit-title');
+		const branchName = core.getInput('branch-name');
+		const userName = core.getInput('user-name');
+		const userEmail = core.getInput('user-email');
 
 		// Get the event that triggered the action
 		const { context } = github;
@@ -17,45 +47,21 @@ async function run() {
 
 		// Set up Git
 		const gitClient = git();
-		await gitClient.addConfig('user.name', 'GitHub Action');
-		await gitClient.addConfig('user.email', 'action@github.com');
+		await gitClient.addConfig('user.name', userName);
+		await gitClient.addConfig('user.email', userEmail);
 
 		if (event === 'push') {
-			// This is a push event, run the version command
+			await checkoutBranch(gitClient, branchName);
+			await runCommand(versionCommand);
+			await commitChanges(gitClient, commitMsg, branchName);
 
-			// Check out a new branch
-			const newBranch = 'version-update';
-			await gitClient.checkoutLocalBranch(newBranch);
-
-			// Run the version command
-			const versionCmd = versionCommand.split(' ');
-			await exec.exec(versionCmd[0], versionCmd.slice(1));
-
-			// Add changes to Git and commit
-			await gitClient.add('./*');
-			await gitClient.commit('Update package versions');
-
-			// Push changes to the new branch
-			await gitClient.push('origin', newBranch);
-
-			// Create a pull request
 			const octokit = new Octokit({ auth: githubToken });
-			await octokit.pulls.create({
-				owner: context.repo.owner,
-				repo: context.repo.repo,
-				title: 'Update package versions',
-				head: newBranch,
-				base: 'main'
-			});
+			await createPullRequest(octokit, context, commitTitle, branchName);
 		} else if (
 			event === 'pull_request' &&
 			context.payload.pull_request.merged
 		) {
-			// This is a merged pull request event, run the publish command
-
-			// Run the publish command
-			const publishCmd = publishCommand.split(' ');
-			await exec.exec(publishCmd[0], publishCmd.slice(1));
+			await runCommand(publishCommand);
 		}
 	} catch (error) {
 		core.setFailed(error.message);
