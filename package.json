@@ -19,6 +19,7 @@
         "@actions/github": "^2.1.0",
         "@octokit/rest": "^20.0.1",
         "@vercel/ncc": "^0.36.1",
+        "node-fetch": "^3.3.1",
         "rimraf": "^5.0.1",
         "simple-git": "^3.19.1"
     },

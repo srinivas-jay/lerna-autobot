@@ -3,6 +3,7 @@ const exec = require('@actions/exec');
 const git = require('simple-git');
 const core = require('@actions/core');
 const github = require('@actions/github');
+const fetch = require('node-fetch');
 
 async function checkoutBranch(gitClient, branchName) {
 	await gitClient.checkoutLocalBranch(branchName);
@@ -55,7 +56,12 @@ async function run() {
 			await runCommand(versionCommand);
 			await commitChanges(gitClient, commitMsg, branchName);
 
-			const octokit = new Octokit({ auth: githubToken });
+			const octokit = new Octokit({
+				auth: githubToken,
+				request: {
+					fetch: fetch
+				}
+			});
 			await createPullRequest(octokit, context, commitTitle, branchName);
 		} else if (
 			event === 'pull_request' &&
