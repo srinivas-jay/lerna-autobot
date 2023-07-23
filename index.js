@@ -1,5 +1,5 @@
 const { Octokit } = require('@octokit/rest');
-const { exec } = require('@actions/exec');
+const exec = require('@actions/exec');
 const git = require('simple-git');
 const core = require('@actions/core');
 const github = require('@actions/github');
