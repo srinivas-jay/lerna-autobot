@@ -47406,22 +47406,30 @@ async function run() {
 		await gitClient.addConfig('user.email', userEmail);
 
 		if (event === 'push') {
-			await checkoutBranch(gitClient, branchName);
-			await runCommand(versionCommand);
-			await commitChanges(gitClient, commitMsg, branchName);
+			const pushedBranch = context.payload.ref.split('/').pop();
+			if (pushedBranch === branchName) {
+				console.log(
+					`This is a push from the ${branchName} branch, running the publish process...`
+				);
+				await runCommand(publishCommand);
+			} else {
+				await checkoutBranch(gitClient, branchName);
+				await runCommand(versionCommand);
+				await commitChanges(gitClient, commitMsg, branchName);
 
-			const octokit = new Octokit({
-				auth: githubToken,
-				request: {
-					fetch: fetch
-				}
-			});
-			await createPullRequest(octokit, context, commitTitle, branchName);
-		} else if (
-			event === 'pull_request' &&
-			context.payload.pull_request.merged
-		) {
-			await runCommand(publishCommand);
+				const octokit = new Octokit({
+					auth: githubToken,
+					request: {
+						fetch: fetch
+					}
+				});
+				await createPullRequest(
+					octokit,
+					context,
+					commitTitle,
+					branchName
+				);
+			}
 		}
 	} catch (error) {
 		core.setFailed(error.message);
