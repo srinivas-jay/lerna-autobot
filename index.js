@@ -3,7 +3,7 @@ const exec = require('@actions/exec');
 const git = require('simple-git');
 const core = require('@actions/core');
 const github = require('@actions/github');
-const fetch = require('node-fetch');
+const fetch = require('node-fetch').default;
 
 async function checkoutBranch(gitClient, branchName) {
 	await gitClient.checkoutLocalBranch(branchName);
