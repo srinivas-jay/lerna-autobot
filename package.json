@@ -2,8 +2,9 @@
     "name": "lerna-autobot",
     "version": "1.0.0",
     "description": "A bot to automate lerna releases",
-    "main": "index.js",
+    "main": "dist/index.js",
     "scripts": {
+        "build": "ncc build index.js --license licenses.txt",
         "prepare": "husky install"
     },
     "lint-staged": {
@@ -15,6 +16,7 @@
         "@actions/core": "^1.10.0",
         "@actions/github": "^2.1.0",
         "@octokit/rest": "^20.0.1",
+        "@vercel/ncc": "^0.36.1",
         "simple-git": "^3.19.1"
     },
     "devDependencies": {
