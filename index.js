@@ -33,14 +33,14 @@ async function run() {
 
 		// Set up Git
 		const gitClient = git();
-		await gitClient.addConfig('user.name', userName);
-		await gitClient.addConfig('user.email', userEmail);
+		await gitClient.addConfig('user.name', inputs.userName);
+		await gitClient.addConfig('user.email', inputs.userEmail);
 
 		// Check if the commit is made by this action
 		const isActionCommit = await isCommitMadeByAction(
 			gitClient,
-			userName,
-			userEmail
+			inputs.userName,
+			inputs.userEmail
 		);
 
 		// if so run the only publish command and exit
@@ -50,17 +50,22 @@ async function run() {
 		}
 
 		// Run the version command on new branch
-		await checkoutBranch(gitClient, branchName);
+		await checkoutBranch(gitClient, inputs.branchName);
 		await runCommand(versionCommand);
-		await commitChanges(gitClient, commitMsg, branchName);
+		await commitChanges(gitClient, commitMsg, inputs.branchName);
 
 		const octokit = new Octokit({
-			auth: githubToken,
+			auth: inputs.githubToken,
 			request: {
 				fetch: fetch
 			}
 		});
-		await createPullRequest(octokit, context, commitTitle, branchName);
+		await createPullRequest(
+			octokit,
+			context,
+			commitTitle,
+			inputs.branchName
+		);
 	} catch (error) {
 		core.setFailed(error.message);
 	}
