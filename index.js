@@ -1,82 +1,66 @@
 const { Octokit } = require('@octokit/rest');
-const exec = require('@actions/exec');
 const git = require('simple-git');
 const core = require('@actions/core');
 const github = require('@actions/github');
 const fetch = require('node-fetch').default;
 
-async function checkoutBranch(gitClient, branchName) {
-	await gitClient.checkoutLocalBranch(branchName);
-}
-
-async function runCommand(command) {
-	const cmd = command.split(' ');
-	await exec.exec(cmd[0], cmd.slice(1));
-}
-
-async function commitChanges(gitClient, commitMsg, branchName) {
-	await gitClient.add('./*');
-	await gitClient.commit(commitMsg);
-	await gitClient.push('origin', branchName);
-}
-
-async function createPullRequest(octokit, context, commitTitle, branchName) {
-	await octokit.pulls.create({
-		owner: context.repo.owner,
-		repo: context.repo.repo,
-		title: commitTitle,
-		head: branchName,
-		base: 'main'
-	});
-}
+const {
+	validateInputs,
+	isCommitMadeByAction,
+	checkoutBranch,
+	commitChanges,
+	runCommand,
+	createPullRequest
+} = require('./utils');
 
 async function run() {
 	try {
 		// Get inputs
-		const githubToken = core.getInput('github-token');
+		const inputs = {
+			githubToken: core.getInput('github-token'),
+			branchName: core.getInput('branch-name'),
+			userName: core.getInput('user-name'),
+			userEmail: core.getInput('user-email')
+		};
+
+		validateInputs(inputs);
+
 		const versionCommand = core.getInput('version-command');
 		const publishCommand = core.getInput('publish-command');
-		const commitMsg = core.getInput('commit-msg');
-		const commitTitle = core.getInput('commit-title');
-		const branchName = core.getInput('branch-name');
-		const userName = core.getInput('user-name');
-		const userEmail = core.getInput('user-email');
 
 		// Get the event that triggered the action
 		const { context } = github;
-		const event = context.eventName;
 
 		// Set up Git
 		const gitClient = git();
 		await gitClient.addConfig('user.name', userName);
 		await gitClient.addConfig('user.email', userEmail);
 
-		if (event === 'push') {
-			const pushedBranch = context.payload.ref.split('/').pop();
-			if (pushedBranch === branchName) {
-				console.log(
-					`This is a push from the ${branchName} branch, running the publish process...`
-				);
-				await runCommand(publishCommand);
-			} else {
-				await checkoutBranch(gitClient, branchName);
-				await runCommand(versionCommand);
-				await commitChanges(gitClient, commitMsg, branchName);
+		// Check if the commit is made by this action
+		const isActionCommit = await isCommitMadeByAction(
+			gitClient,
+			userName,
+			userEmail
+		);
 
-				const octokit = new Octokit({
-					auth: githubToken,
-					request: {
-						fetch: fetch
-					}
-				});
-				await createPullRequest(
-					octokit,
-					context,
-					commitTitle,
-					branchName
-				);
-			}
+		// if so run the only publish command and exit
+		if (isActionCommit) {
+			await runCommand(publishCommand);
+			return;
 		}
+
+		// Run the version command on new branch
+		await checkoutBranch(gitClient, branchName);
+		await runCommand(versionCommand);
+		await commitChanges(gitClient, commitMsg, branchName);
+
+		const octokit = new Octokit({
+			auth: githubToken,
+			request: {
+				fetch: fetch
+			}
+		});
+		await createPullRequest(octokit, context, commitTitle, branchName);
 	} catch (error) {
 		core.setFailed(error.message);
 	}

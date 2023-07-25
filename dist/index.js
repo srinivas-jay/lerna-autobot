@@ -1,7 +1,7 @@
 /******/ (() => { // webpackBootstrap
 /******/ 	var __webpack_modules__ = ({
 
-/***/ 5241:
+/***/ 7351:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -135,7 +135,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 };
 Object.defineProperty(exports, "__esModule", ({ value: true }));
 exports.getIDToken = exports.getState = exports.saveState = exports.group = exports.endGroup = exports.startGroup = exports.info = exports.notice = exports.warning = exports.error = exports.debug = exports.isDebug = exports.setFailed = exports.setCommandEcho = exports.setOutput = exports.getBooleanInput = exports.getMultilineInput = exports.getInput = exports.addPath = exports.setSecret = exports.exportVariable = exports.ExitCode = void 0;
-const command_1 = __nccwpck_require__(5241);
+const command_1 = __nccwpck_require__(7351);
 const file_command_1 = __nccwpck_require__(717);
 const utils_1 = __nccwpck_require__(5278);
 const os = __importStar(__nccwpck_require__(2037));
@@ -1143,7 +1143,7 @@ const os = __importStar(__nccwpck_require__(2037));
 const events = __importStar(__nccwpck_require__(2361));
 const child = __importStar(__nccwpck_require__(2081));
 const path = __importStar(__nccwpck_require__(1017));
-const io = __importStar(__nccwpck_require__(7351));
+const io = __importStar(__nccwpck_require__(7436));
 const ioUtil = __importStar(__nccwpck_require__(1962));
 const timers_1 = __nccwpck_require__(9512);
 /* eslint-disable @typescript-eslint/unbound-method */
@@ -17918,7 +17918,7 @@ exports.getCmdPath = getCmdPath;
 
 /***/ }),
 
-/***/ 7351:
+/***/ 7436:
 /***/ (function(__unused_webpack_module, exports, __nccwpck_require__) {
 
 "use strict";
@@ -44271,6 +44271,95 @@ function wrappy (fn, cb) {
 
 /***/ }),
 
+/***/ 1252:
+/***/ ((__unused_webpack_module, __webpack_exports__, __nccwpck_require__) => {
+
+"use strict";
+__nccwpck_require__.r(__webpack_exports__);
+/* harmony export */ __nccwpck_require__.d(__webpack_exports__, {
+/* harmony export */   "checkoutBranch": () => (/* binding */ checkoutBranch),
+/* harmony export */   "commitChanges": () => (/* binding */ commitChanges),
+/* harmony export */   "createPullRequest": () => (/* binding */ createPullRequest),
+/* harmony export */   "isCommitMadeByAction": () => (/* binding */ isCommitMadeByAction),
+/* harmony export */   "runCommand": () => (/* binding */ runCommand),
+/* harmony export */   "validateInputs": () => (/* binding */ validateInputs)
+/* harmony export */ });
+const exec = __nccwpck_require__(1514);
+
+function validateInputs(inputs) {
+	const { githubToken, branchName, userName, userEmail } = inputs;
+	if (!githubToken) {
+		throw new Error('Github token is required');
+	}
+	if (!branchName) {
+		throw new Error('Branch name is required');
+	}
+	if (!userName) {
+		throw new Error('User name is required');
+	}
+	if (!userEmail) {
+		throw new Error('User email is required');
+	}
+}
+
+async function isCommitMadeByAction(gitClient, userName, userEmail) {
+	const latestCommit = await gitClient.log({ maxCount: 1 });
+	if (
+		latestCommit &&
+		latestCommit.latest &&
+		latestCommit.latest.author_email === userEmail &&
+		latestCommit.latest.author_name === userName
+	) {
+		return true;
+	}
+	return false;
+}
+
+async function checkoutBranch(gitClient, branchName) {
+	await gitClient.checkoutLocalBranch(branchName);
+}
+
+async function runCommand(command) {
+	try {
+		const cmd = command.split(' ');
+		await exec.exec(cmd[0], cmd.slice(1));
+	} catch (error) {
+		throw new Error(`Error running command "${command}": ${error.message}`);
+	}
+}
+
+async function commitChanges(gitClient, commitMsg, branchName) {
+	try {
+		await gitClient.add('./*');
+		await gitClient.commit(commitMsg);
+		await gitClient.push('origin', branchName);
+	} catch (error) {
+		throw new Error(`Error committing changes: ${error.message}`);
+	}
+}
+
+async function createPullRequest(
+	octokit,
+	context,
+	commitTitle,
+	branchName
+) {
+	try {
+		await octokit.pulls.create({
+			owner: context.repo.owner,
+			repo: context.repo.repo,
+			title: commitTitle,
+			head: branchName,
+			base: 'main'
+		});
+	} catch (error) {
+		throw new Error(`Error creating pull request: ${error.message}`);
+	}
+}
+
+
+/***/ }),
+
 /***/ 2877:
 /***/ ((module) => {
 
@@ -47353,84 +47442,68 @@ var __webpack_exports__ = {};
 // This entry need to be wrapped in an IIFE because it need to be isolated against other modules in the chunk.
 (() => {
 const { Octokit } = __nccwpck_require__(5375);
-const exec = __nccwpck_require__(1514);
 const git = __nccwpck_require__(9103);
 const core = __nccwpck_require__(2186);
 const github = __nccwpck_require__(5438);
 const fetch = (__nccwpck_require__(4429)/* ["default"] */ .ZP);
 
-async function checkoutBranch(gitClient, branchName) {
-	await gitClient.checkoutLocalBranch(branchName);
-}
-
-async function runCommand(command) {
-	const cmd = command.split(' ');
-	await exec.exec(cmd[0], cmd.slice(1));
-}
-
-async function commitChanges(gitClient, commitMsg, branchName) {
-	await gitClient.add('./*');
-	await gitClient.commit(commitMsg);
-	await gitClient.push('origin', branchName);
-}
-
-async function createPullRequest(octokit, context, commitTitle, branchName) {
-	await octokit.pulls.create({
-		owner: context.repo.owner,
-		repo: context.repo.repo,
-		title: commitTitle,
-		head: branchName,
-		base: 'main'
-	});
-}
+const {
+	validateInputs,
+	isCommitMadeByAction,
+	checkoutBranch,
+	commitChanges,
+	runCommand,
+	createPullRequest
+} = __nccwpck_require__(1252);
 
 async function run() {
 	try {
 		// Get inputs
-		const githubToken = core.getInput('github-token');
+		const inputs = {
+			githubToken: core.getInput('github-token'),
+			branchName: core.getInput('branch-name'),
+			userName: core.getInput('user-name'),
+			userEmail: core.getInput('user-email')
+		};
+
+		validateInputs(inputs);
+
 		const versionCommand = core.getInput('version-command');
 		const publishCommand = core.getInput('publish-command');
-		const commitMsg = core.getInput('commit-msg');
-		const commitTitle = core.getInput('commit-title');
-		const branchName = core.getInput('branch-name');
-		const userName = core.getInput('user-name');
-		const userEmail = core.getInput('user-email');
 
 		// Get the event that triggered the action
 		const { context } = github;
-		const event = context.eventName;
 
 		// Set up Git
 		const gitClient = git();
 		await gitClient.addConfig('user.name', userName);
 		await gitClient.addConfig('user.email', userEmail);
 
-		if (event === 'push') {
-			const pushedBranch = context.payload.ref.split('/').pop();
-			if (pushedBranch === branchName) {
-				console.log(
-					`This is a push from the ${branchName} branch, running the publish process...`
-				);
-				await runCommand(publishCommand);
-			} else {
-				await checkoutBranch(gitClient, branchName);
-				await runCommand(versionCommand);
-				await commitChanges(gitClient, commitMsg, branchName);
+		// Check if the commit is made by this action
+		const isActionCommit = await isCommitMadeByAction(
+			gitClient,
+			userName,
+			userEmail
+		);
 
-				const octokit = new Octokit({
-					auth: githubToken,
-					request: {
-						fetch: fetch
-					}
-				});
-				await createPullRequest(
-					octokit,
-					context,
-					commitTitle,
-					branchName
-				);
-			}
+		// if so run the only publish command and exit
+		if (isActionCommit) {
+			await runCommand(publishCommand);
+			return;
 		}
+
+		// Run the version command on new branch
+		await checkoutBranch(gitClient, branchName);
+		await runCommand(versionCommand);
+		await commitChanges(gitClient, commitMsg, branchName);
+
+		const octokit = new Octokit({
+			auth: githubToken,
+			request: {
+				fetch: fetch
+			}
+		});
+		await createPullRequest(octokit, context, commitTitle, branchName);
 	} catch (error) {
 		core.setFailed(error.message);
 	}

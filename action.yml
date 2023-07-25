@@ -13,18 +13,23 @@ inputs:
   commit-msg:
     description: "Commit message"
     default: "Update package versions"
+    required: false
   commit-title:
     description: "Pull request title"
     default: "Update package versions"
+    required: false
   branch-name:
     description: "Branch name for version updates"
     default: "version-update"
+    required: false
   user-name:
     description: "Git user name"
     default: "GitHub Action"
+    required: false
   user-email:
     description: "Git user email"
-    default: "srini.j135@gmail.com"
+    default: "action@github.com"
+    required: false
 
 runs:
   using: "node16"
