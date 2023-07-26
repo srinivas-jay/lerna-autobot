@@ -44303,7 +44303,18 @@ function validateInputs(inputs) {
 }
 
 async function isCommitMadeByAction(gitClient, userName, userEmail) {
+	console.log('userName: ', userName);
+	console.log('userEmail: ', userEmail);
 	const latestCommit = await gitClient.log({ maxCount: 1 });
+	console.log('latestCommit.latest: ', latestCommit?.latest);
+	console.log(
+		'latestCommit.latest.author_email: ',
+		latestCommit?.latest?.author_email
+	);
+	console.log(
+		'latestCommit.latest.author_name: ',
+		latestCommit?.latest?.author_name
+	);
 	if (
 		latestCommit &&
 		latestCommit.latest &&
@@ -47470,6 +47481,8 @@ async function run() {
 
 		const versionCommand = core.getInput('version-command');
 		const publishCommand = core.getInput('publish-command');
+		const commitMsg = core.getInput('commit-message');
+		const commitTitle = core.getInput('commit-title');
 
 		// Get the event that triggered the action
 		const { context } = github;

@@ -17,7 +17,18 @@ export function validateInputs(inputs) {
 }
 
 export async function isCommitMadeByAction(gitClient, userName, userEmail) {
+	console.log('userName: ', userName);
+	console.log('userEmail: ', userEmail);
 	const latestCommit = await gitClient.log({ maxCount: 1 });
+	console.log('latestCommit.latest: ', latestCommit?.latest);
+	console.log(
+		'latestCommit.latest.author_email: ',
+		latestCommit?.latest?.author_email
+	);
+	console.log(
+		'latestCommit.latest.author_name: ',
+		latestCommit?.latest?.author_name
+	);
 	if (
 		latestCommit &&
 		latestCommit.latest &&

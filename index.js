@@ -27,6 +27,8 @@ async function run() {
 
 		const versionCommand = core.getInput('version-command');
 		const publishCommand = core.getInput('publish-command');
+		const commitMsg = core.getInput('commit-message');
+		const commitTitle = core.getInput('commit-title');
 
 		// Get the event that triggered the action
 		const { context } = github;
